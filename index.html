@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PubMed Paper Fetcher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PubMed Paper Fetcher</h1>
+        <form id="fetchForm">
+            <label for="query">Enter Search Query:</label>
+            <input type="text" id="query" name="query" required placeholder="e.g., cancer research">
+            <button type="submit">Fetch Papers</button>
+        </form>
+
+        <table id="resultsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>PubmedID</th>
+                    <th>Title</th>
+                    <th>Publication Date</th>
+                    <th>Non-academic Author(s)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const fetchForm = document.getElementById('fetchForm');
+        const resultsTable = document.getElementById('resultsTable');
+        const resultsTableBody = resultsTable.querySelector('tbody');
+
+        fetchForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const query = document.getElementById('query').value;
+            if (!query) {
+                alert('Please enter a search query.');
+                return;
+            }
+
+            try {
+                // Fetch data from the Python API
+                const response = await fetch(`/fetch_papers?query=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error('Error fetching data.');
+                }
+
+                const papers = await response.json();
+
+                if (papers.length === 0) {
+                    alert('No papers found for the given query.');
+                    resultsTable.style.display = 'none';
+                    return;
+                }
+
+                // Populate table with results
+                resultsTableBody.innerHTML = '';
+                papers.forEach(paper => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${paper.PubmedID}</td>
+                        <td>${paper.Title}</td>
+                        <td>${paper['Publication Date']}</td>
+                        <td>${paper['Non-academic Author(s)']}</td>
+                    `;
+                    resultsTableBody.appendChild(row);
+                });
+                resultsTable.style.display = 'table';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to fetch papers. Please try again later.');
+            }
+        });
+    </script>
+</body>
+</html>
